@@ -1,6 +1,9 @@
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from django.contrib.auth.models import User
 
 from .models import Category, Topic, Post
 from .serializers import CategorySerializer, TopicSerializer, PostSimpleSerializer
@@ -48,6 +51,7 @@ def category_search_by_name(request, query):
     serializer = CategorySerializer(qs, many=True)
     return Response(serializer.data)
 
+
 @api_view(['GET', 'POST'])
 def topic_list(request):
     if request.method == 'GET':
@@ -90,37 +94,54 @@ def topic_search_by_name(request, query):
     serializer = TopicSerializer(qs, many=True)
     return Response(serializer.data)
 
-@api_view(['GET', 'POST'])
-def post_list(request):
-    if request.method == 'GET':
+
+class PostListAPIView(APIView):
+    def get(self, request):
         qs = Post.objects.select_related('topic', 'topic__category', 'created_by').all()
+        q = request.query_params.get('q')
+        if q:
+            qs = qs.filter(title__icontains=q)
+
         serializer = PostSimpleSerializer(qs, many=True)
         return Response(serializer.data)
 
-    serializer = PostSimpleSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save(created_by=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request):
+        serializer = PostSimpleSerializer(data=request.data)
+        if serializer.is_valid():
+            author = request.user if request.user.is_authenticated else User.objects.first()
+            serializer.save(created_by=author)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET', 'PUT', 'DELETE'])
-def post_detail(request, pk):
-    try:
-        obj = Post.objects.get(pk=pk)
-    except Post.DoesNotExist:
-        return Response({"detail": "Nie znaleziono wpisu."}, status=status.HTTP_404_NOT_FOUND)
+class PostDetailAPIView(APIView):
+    def get_object(self, pk):
+        try:
+            return Post.objects.get(pk=pk)
+        except Post.DoesNotExist:
+            return None
 
-    if request.method == 'GET':
+    def get(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({"detail": "Nie znaleziono wpisu."}, status=status.HTTP_404_NOT_FOUND)
         serializer = PostSimpleSerializer(obj)
         return Response(serializer.data)
 
-    if request.method == 'PUT':
+    def put(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({"detail": "Nie znaleziono wpisu."}, status=status.HTTP_404_NOT_FOUND)
+
         serializer = PostSimpleSerializer(obj, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    obj.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
+    def delete(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({"detail": "Nie znaleziono wpisu."}, status=status.HTTP_404_NOT_FOUND)
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
