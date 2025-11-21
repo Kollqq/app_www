@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
 
 from .authentication import BearerTokenAuthentication
 from .models import Category, Topic, Post
@@ -111,6 +112,21 @@ def topic_search_by_name(request, query):
     return Response(serializer.data)
 
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes([IsAuthenticated])
+def category_permission_test(request, pk):
+    if not request.user.has_perm('posts.view_category'):
+        raise PermissionDenied("Brak uprawnienia view_category.")
+
+    try:
+        obj = Category.objects.get(pk=pk)
+    except Category.DoesNotExist:
+        return Response({"detail": "Nie znaleziono kategorii."}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = CategorySerializer(obj)
+    return Response(serializer.data)
+
 class PostListAPIView(APIView):
     def get(self, request):
         qs = Post.objects.select_related('topic', 'topic__category', 'created_by').all()
@@ -155,6 +171,13 @@ class PostUpdateAPIView(APIView):
         obj = self.get_object(pk)
         if not obj:
             return Response({"detail": "Nie znaleziono wpisu."}, status=status.HTTP_404_NOT_FOUND)
+
+        if obj.created_by != request.user:
+            if not request.user.has_perm('posts.can_edit_others_posts'):
+                return Response(
+                    {"detail": "Brak uprawnień do edycji cudzego posta."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         serializer = PostSimpleSerializer(obj, data=request.data)
         if serializer.is_valid():

@@ -6,6 +6,7 @@ urlpatterns = [
     path('categories/<int:pk>/', views.category_detail, name='category_detail'),
     path('categories/<int:pk>/topics/', views.category_topics, name='category_topics'),
     path('categories/search/<str:query>/', views.category_search_by_name, name='category_search'),
+    path('categories/<int:pk>/permission-test/', views.category_permission_test),
 
     path('topics/', views.topic_list, name='topic_list'),
     path('topics/<int:pk>/', views.topic_detail, name='topic_detail'),
