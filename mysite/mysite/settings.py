@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
 
+    'graphene_django',
+
     'polls',
     'posts',
 ]
@@ -87,6 +89,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'mysite.wsgi.application'
 
+GRAPHENE = {
+    "SCHEMA": "schema.schema",
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
