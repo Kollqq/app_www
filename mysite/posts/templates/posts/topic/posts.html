@@ -1,0 +1,17 @@
+{% extends "posts/base.html" %}
+
+{% block title %}Posty dla tematu {{ topic.name }}{% endblock %}
+
+{% block content %}
+<h2>Posty w temacie: {{ topic.name }}</h2>
+
+{% for p in posts %}
+<div class="post-card">
+    <h3><a href="{% url 'post_detail_html' p.pk %}">{{ p.title }}</a></h3>
+    <small>{{ p.created_at }} | {{ p.created_by.username }}</small>
+    <p>{{ p.text|truncatewords:25 }}</p>
+</div>
+{% empty %}
+<p>Brak postów w tym temacie.</p>
+{% endfor %}
+{% endblock %}

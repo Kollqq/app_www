@@ -1,0 +1,15 @@
+{% extends "posts/base.html" %}
+
+{% block title %}Lista postów{% endblock %}
+
+{% block content %}
+<h2>Lista postów</h2>
+
+{% for post in posts %}
+<div class="post-card">
+    <h3><a href="{% url 'post_detail_html' post.pk %}">{{ post.title }}</a></h3>
+    <small>Temat: {{ post.topic.name }} | Autor: {{ post.created_by.username }}</small>
+    <p>{{ post.text|truncatewords:20 }}</p>
+</div>
+{% endfor %}
+{% endblock %}

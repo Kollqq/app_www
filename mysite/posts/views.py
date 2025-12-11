@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
+from django.shortcuts import render, get_object_or_404
 
 from .authentication import BearerTokenAuthentication
 from .models import Category, Topic, Post
@@ -215,3 +216,31 @@ def user_posts(request):
         serializer.save(created_by=request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+def topic_list_html(request):
+    topics = Topic.objects.select_related("category").all()
+    return render(request, "posts/topic/list.html", {"topics": topics})
+
+
+def topic_detail_html(request, pk):
+    topic = get_object_or_404(Topic, pk=pk)
+    return render(request, "posts/topic/detail.html", {"topic": topic})
+
+
+def post_list_html(request):
+    posts = Post.objects.select_related("topic").all()
+    return render(request, "posts/post/list.html", {"posts": posts})
+
+
+def post_detail_html(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    return render(request, "posts/post/detail.html", {"post": post})
+
+def topic_posts_html(request, pk):
+    topic = get_object_or_404(Topic, pk=pk)
+    posts = Post.objects.filter(topic=topic).order_by("-created_at")
+    return render(request, "posts/topic/posts.html", {
+        "topic": topic,
+        "posts": posts
+    })

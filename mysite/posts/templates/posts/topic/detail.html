@@ -1,0 +1,11 @@
+{% extends "posts/base.html" %}
+
+{% block title %}Temat: {{ topic.name }}{% endblock %}
+
+{% block content %}
+<h2>{{ topic.name }}</h2>
+<p>Kategoria: {{ topic.category.name }}</p>
+<p>Utworzono: {{ topic.created }}</p>
+
+<a href="{% url 'topic_posts_html' topic.pk %}">Zobacz posty dla tego tematu →</a>
+{% endblock %}
